@@ -1,0 +1,93 @@
+# compiled output
+/dist
+/node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# SonarQube config files
+/.scannerwork
+sonar-scan.sh
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Ignore all .env files
+.env
+.env.*
+
+# Except for .env.example
+!.env.example
+/.vscode
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+#Docs
+docs/
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# calculation related files
+calculations
+
+# remove duplicate SIP schedule scripts
+remove-duplicate-sip-schedules.ts
+scripts/recalculate-fractional-cash.ts
+scripts/import-instruments-from-excel.ts
+instrument_list.xlsx
+/scripts/find-deposits-by-criteria.ts
+/scripts/bulk-dishonor-deposits.ts
+/scripts/backfill-unit-holding-history-for-pending-purchases.ts
+/scripts/assign-rm-role-to-admins.ts
+/scripts/fix-uhh-average-unit-cost-price.ts
+/scripts/generate-unit-surrender-allocations.ts
+/scripts/duplicate-uuh-at-same-timestamp.ts
+
+# Reconciliation script output (Excel)
+scripts/output
+scripts/reconcile-investment-units-and-cash.ts
+
+# PM2
+.pm2/
+
+# Deployment / CI artifacts
+deployment-package.tar.gz
+deploy-package/
+fortivpn.conf
+sonar-project.properties
+Makefile
