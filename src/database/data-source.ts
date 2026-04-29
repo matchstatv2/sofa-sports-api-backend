@@ -12,6 +12,8 @@ import {
 
 dotenv.config();
 
+const sslEnabled = process.env.POSTGRES_SSL === 'true';
+
 /**
  * Standalone TypeORM DataSource used exclusively by the TypeORM CLI
  * for migration generation and execution.
@@ -26,6 +28,12 @@ export const AppDataSource = new DataSource({
   username: process.env.POSTGRES_USER ?? 'postgres',
   password: process.env.POSTGRES_PASSWORD ?? '',
   schema: process.env.POSTGRES_SCHEMA ?? 'public',
+  ssl: sslEnabled
+    ? {
+        rejectUnauthorized:
+          process.env.POSTGRES_SSL_REJECT_UNAUTHORIZED !== 'false',
+      }
+    : false,
   synchronize: false,
   logging: process.env.TYPEORM_LOGGING === 'true',
   entities: [

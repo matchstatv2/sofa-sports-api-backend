@@ -8,6 +8,9 @@ export const databaseConfig = registerAs('database', () => ({
   username: process.env.POSTGRES_USER ?? 'postgres',
   password: process.env.POSTGRES_PASSWORD ?? '',
   schema: process.env.POSTGRES_SCHEMA ?? 'public',
+  ssl: process.env.POSTGRES_SSL === 'true',
+  sslRejectUnauthorized:
+    process.env.POSTGRES_SSL_REJECT_UNAUTHORIZED !== 'false',
   synchronize: process.env.TYPEORM_SYNC === 'true',
   logging: process.env.TYPEORM_LOGGING === 'true',
 }));
