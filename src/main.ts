@@ -1,20 +1,21 @@
 /**
- * Application entrypoint. Configures middleware (helmet, compression, CORS),
- * global validation and exception handling, optional Swagger at `/docs` when
- * `NODE_ENV !== 'production'`, and graceful shutdown hooks. Port and API prefix
- * come from environment variables (`PORT`, `API_PREFIX`).
+ * Application entrypoint. Configures middleware, global validation,
+ * exception handling, optional Swagger, and graceful shutdown hooks.
  */
-import { NestFactory } from '@nestjs/core';
 import { LogLevel, RequestMethod, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { Logger } from 'nestjs-pino';
-import helmet from 'helmet';
 import compression from 'compression';
+import helmet from 'helmet';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap(): Promise<void> {
-  /** Full Nest framework INFO (module graph, “Mapped {…} route”) — noisy in dev. */
+  const swaggerEnabled = process.env.SWAGGER_ENABLED !== 'false';
+  const swaggerPath = process.env.SWAGGER_PATH ?? 'docs';
+
+  // Keep Nest framework logs quiet unless verbose bootstrap is requested.
   const verboseNest = process.env.NEST_VERBOSE_BOOTSTRAP === 'true';
   const nestLoggerLevels: LogLevel[] | undefined = verboseNest
     ? undefined
@@ -25,19 +26,13 @@ async function bootstrap(): Promise<void> {
     ...(nestLoggerLevels !== undefined ? { logger: nestLoggerLevels } : {}),
   });
 
-  // ─── Structured Logger ─────────────────────────────────────────────────────
   app.useLogger(app.get(Logger));
-
-  // ─── Security Headers ──────────────────────────────────────────────────────
   app.use(helmet());
-
-  // ─── Compression ───────────────────────────────────────────────────────────
   app.use(compression());
 
-  // ─── CORS ─────────────────────────────────────────────────────────────────
   const corsOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
-    .map((o) => o.trim())
+    .map((origin) => origin.trim())
     .filter(Boolean);
 
   app.enableCors({
@@ -50,7 +45,6 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // ─── Global Prefix & Versioning ───────────────────────────────────────────
   const apiPrefix = process.env.API_PREFIX ?? 'api/v1';
   app.setGlobalPrefix(apiPrefix, {
     exclude: [
@@ -59,7 +53,6 @@ async function bootstrap(): Promise<void> {
     ],
   });
 
-  // ─── Global Validation ────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -69,11 +62,9 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // ─── Global Exception Filter ──────────────────────────────────────────────
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // ─── Swagger (disabled in production for performance) ─────────────────────
-  if (process.env.NODE_ENV !== 'production') {
+  if (swaggerEnabled) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Matchstat SofaScore Backend API')
       .setDescription(
@@ -96,37 +87,38 @@ Same path suffixes as SofaScore's internal API (confirmed by Mihir).
       `,
       )
       .setVersion('1.0')
-      .addTag('Sofa Proxy (DB-first)', 'Public JSON proxy — same paths as SofaScore / sportsdata365.')
-      .addTag('Ingestion (Internal / Ops)', 'Cron/backfill triggers — protect at nginx.')
+      .addTag('Sofa Proxy (DB-first)', 'Public JSON proxy - same paths as SofaScore / sportsdata365.')
+      .addTag('Ingestion (Internal / Ops)', 'Cron/backfill triggers - protect at nginx.')
       .addTag('Health & Observability', 'Liveness/readiness and internal metrics.')
       .addTag(
-        'Admin — Country Registry',
-        'Dynamic ISO2 list from provider — no hardcoded country codes.',
+        'Admin - Country Registry',
+        'Dynamic ISO2 list from provider - no hardcoded country codes.',
       )
       .addTag(
-        'Admin — Tournament Registry',
-        'Dynamic unique tournament IDs from categories API — no hardcoded tournament list.',
+        'Admin - Tournament Registry',
+        'Dynamic unique tournament IDs from categories API - no hardcoded tournament list.',
       )
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('docs', app, document, {
+    SwaggerModule.setup(swaggerPath, app, document, {
       swaggerOptions: { persistAuthorization: true },
     });
   }
 
-  // ─── Graceful Shutdown ────────────────────────────────────────────────────
   app.enableShutdownHooks();
 
   const port = parseInt(process.env.PORT ?? '3010', 10);
   await app.listen(port);
 
   const logger = app.get(Logger);
-  logger.log(`🚀 SofaScore backend running on port ${port}`, 'Bootstrap');
-  logger.log(
-    `📚 Swagger docs: http://localhost:${port}/docs`,
-    'Bootstrap',
-  );
+  logger.log(`SofaScore backend running on port ${port}`, 'Bootstrap');
+
+  if (swaggerEnabled) {
+    logger.log(`Swagger docs: http://localhost:${port}/${swaggerPath}`, 'Bootstrap');
+  } else {
+    logger.log('Swagger disabled by SWAGGER_ENABLED=false', 'Bootstrap');
+  }
 }
 
 bootstrap().catch((err) => {
